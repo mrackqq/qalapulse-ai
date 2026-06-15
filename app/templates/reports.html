@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block topbar_title %}Reports{% endblock %}
+{% block topbar_subtitle %}Выгрузки для акимата: XLSX, CSV, PDF, печать{% endblock %}
+
+{% block content %}
+<div class="qp-container space-y-6 py-6 sm:py-8">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <span class="eyebrow">Reports</span>
+      <h2 class="section-title mt-2">Отчёты для акимата</h2>
+      <p class="section-sub max-w-2xl">Сводка по выбранному району, категории или статусу: SLA, high-risk, ответственные службы и список задач.</p>
+    </div>
+    <a href="/dashboard" class="btn-secondary">Dashboard</a>
+  </div>
+
+  <!-- Filters -->
+  <form class="qp-card flex flex-col gap-3 p-4 md:flex-row md:items-center" method="get">
+    <div class="grid flex-1 gap-3 sm:grid-cols-3">
+      <select name="district" class="select">
+        <option value="">Все районы</option>
+        {% for district in districts %}<option value="{{ district }}" {% if selected_district == district %}selected{% endif %}>{{ district_labels[district] }}</option>{% endfor %}
+      </select>
+      <select name="category" class="select">
+        <option value="">Все категории</option>
+        {% for category in categories %}<option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category_labels[category] }}</option>{% endfor %}
+      </select>
+      <select name="status" class="select">
+        <option value="">Все статусы</option>
+        {% for item in statuses %}<option value="{{ item }}" {% if selected_status == item %}selected{% endif %}>{{ status_labels[item] }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn-dark flex-1 md:flex-none">Собрать</button>
+      <a href="/reports" class="btn-secondary">Сброс</a>
+    </div>
+  </form>
+
+  <!-- Download bar -->
+  <div class="qp-card-pad">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h3 class="font-display text-lg font-extrabold">Скачать отчёт</h3>
+        <p class="mt-1 text-sm text-muted">Текущие фильтры применяются к выгрузке. В отчёт попадают: ID, проблема, район, priority, risk, SLA, служба, статус и координаты.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <a href="/reports/district.xlsx{% if query_string %}?{{ query_string }}{% endif %}" class="btn-primary">XLSX</a>
+        <a href="/reports/district.pdf{% if query_string %}?{{ query_string }}{% endif %}" class="btn-dark">PDF</a>
+        <a href="/reports/district.csv{% if query_string %}?{{ query_string }}{% endif %}" class="btn-secondary">CSV</a>
+        <a href="/reports/print{% if query_string %}?{{ query_string }}{% endif %}" class="btn-secondary">Печать HTML</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary KPI -->
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <div class="stat-card"><p class="stat-label">Всего</p><p class="stat-value">{{ summary.total }}</p></div>
+    <div class="stat-card border-rose-100 bg-rose-50/40"><p class="stat-label text-rose-600">High-risk</p><p class="stat-value text-rose-700">{{ summary.high_risk }}</p></div>
+    <div class="stat-card border-rose-100 bg-rose-50/40"><p class="stat-label text-rose-600">Просрочено</p><p class="stat-value text-rose-700">{{ summary.overdue }}</p></div>
+    <div class="stat-card"><p class="stat-label">Avg priority</p><p class="stat-value">{{ summary.avg_priority }}</p></div>
+    <div class="stat-card"><p class="stat-label">AI confidence</p><p class="stat-value">{{ summary.avg_confidence }}%</p></div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
+    <aside class="qp-card-pad">
+      <h3 class="font-display text-lg font-extrabold">Топ служб в отчёте</h3>
+      <div class="mt-4 grid gap-2.5">
+        {% for service, count in summary.services %}
+        <div class="flex items-center justify-between rounded-xl border border-line bg-slate-50/60 px-4 py-3">
+          <span class="truncate text-sm font-semibold text-slate-700">{{ service }}</span>
+          <span class="badge-brand">{{ count }}</span>
+        </div>
+        {% else %}
+        <div class="empty"><p class="text-sm text-muted">Нет данных.</p></div>
+        {% endfor %}
+      </div>
+    </aside>
+
+    <article class="qp-card overflow-hidden">
+      <div class="border-b border-line p-4 sm:p-5"><h3 class="font-display text-lg font-extrabold">Заявки в отчёте</h3></div>
+      <div class="qp-scroll overflow-x-auto">
+        <table class="qp-table min-w-[820px]">
+          <thead><tr><th>ID</th><th>Проблема</th><th>Район</th><th>Priority</th><th>SLA</th><th>Служба</th></tr></thead>
+          <tbody>
+            {% for issue in issues[:30] %}
+            <tr>
+              <td><a class="font-bold text-brand-600 hover:text-brand-700" href="/issues/{{ issue.id }}">#{{ issue.id }}</a></td>
+              <td class="max-w-sm truncate">{{ issue.summary }}</td>
+              <td class="text-muted">{{ district_labels[issue.district] }}</td>
+              <td><span class="badge {% if issue.priority_score >= 70 %}badge-risk-high{% elif issue.priority_score >= 40 %}badge-risk-medium{% else %}badge-risk-low{% endif %}">{{ issue.priority_score }}</span></td>
+              <td><span class="badge-sla-{{ issue.sla_status }}">{{ sla_labels[issue.sla_status] }}</span></td>
+              <td class="text-muted">{{ issue.responsible_service }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6"><div class="empty my-2"><p class="text-sm text-muted">Нет данных.</p></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </div>
+</div>
+{% endblock %}

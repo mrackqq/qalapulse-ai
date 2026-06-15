@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block topbar_title %}Analytics{% endblock %}
+{% block topbar_subtitle %}Распределения, SLA и проблемные зоны{% endblock %}
+
+{% block content %}
+<div class="qp-container space-y-6 py-6 sm:py-8">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <span class="eyebrow">Analytics</span>
+      <h2 class="section-title mt-2">Аналитика QalaPulse AI</h2>
+      <p class="section-sub">Категории, районы, статусы, SLA и средний priority.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="/dashboard" class="btn-secondary">Dashboard</a>
+      <a href="/reports" class="btn-primary">Reports</a>
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <article class="qp-card-pad"><h3 class="font-display text-lg font-extrabold">Обращения по категориям</h3><div class="mt-4 h-80"><canvas id="categoriesChart"></canvas></div></article>
+    <article class="qp-card-pad"><h3 class="font-display text-lg font-extrabold">Обращения по районам</h3><div class="mt-4 h-80"><canvas id="districtsChart"></canvas></div></article>
+    <article class="qp-card-pad"><h3 class="font-display text-lg font-extrabold">Статусы</h3><div class="mt-4 h-80"><canvas id="statusesChart"></canvas></div></article>
+    <article class="qp-card-pad"><h3 class="font-display text-lg font-extrabold">SLA</h3><div class="mt-4 h-80"><canvas id="slaChart"></canvas></div></article>
+    <article class="qp-card-pad lg:col-span-2"><h3 class="font-display text-lg font-extrabold">Средний priority по районам</h3><div class="mt-4 h-80"><canvas id="avgPriorityChart"></canvas></div></article>
+  </div>
+
+  <article class="qp-card overflow-hidden">
+    <div class="border-b border-line p-4 sm:p-5"><h3 class="font-display text-lg font-extrabold">Топ-10 проблемных зон</h3></div>
+    <div class="qp-scroll overflow-x-auto">
+      <table class="qp-table min-w-[720px]">
+        <thead><tr><th>Зона</th><th>Кол-во</th><th>Avg priority</th></tr></thead>
+        <tbody>
+          {% for zone in payload.top_zones %}
+          <tr>
+            <td class="font-medium">{{ zone.zone }}</td>
+            <td><span class="badge-neutral">{{ zone.count }}</span></td>
+            <td><span class="badge {% if zone.avg_priority >= 70 %}badge-risk-high{% elif zone.avg_priority >= 40 %}badge-risk-medium{% else %}badge-risk-low{% endif %}">{{ zone.avg_priority }}</span></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3"><div class="empty my-2"><p class="text-sm text-muted">Нет данных.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const categories = {{ categories_json | safe }};
+  const districts = {{ districts_json | safe }};
+  const statuses = {{ statuses_json | safe }};
+  const avgPriority = {{ avg_priority_json | safe }};
+  const sla = {{ sla_json | safe }};
+
+  Chart.defaults.font.family = "Inter, sans-serif";
+  Chart.defaults.color = "#64748B";
+  const palette = ['#4F46E5', '#06B6D4', '#10B981', '#F59E0B', '#F43F5E', '#8B5CF6', '#14B8A6', '#FB923C', '#64748B'];
+  const labels = (items) => items.map((i) => i.label);
+  const values = (items) => items.map((i) => i.value);
+
+  function makeBar(id, items, title) {
+    new Chart(document.getElementById(id), {
+      type: 'bar',
+      data: { labels: labels(items), datasets: [{ label: title, data: values(items), backgroundColor: '#4F46E5', borderRadius: 8, maxBarThickness: 38 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#EEF2F7' } }, x: { grid: { display: false } } } }
+    });
+  }
+  function makeDoughnut(id, items) {
+    new Chart(document.getElementById(id), {
+      type: 'doughnut',
+      data: { labels: labels(items), datasets: [{ data: values(items), backgroundColor: palette, borderWidth: 2, borderColor: '#fff' }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } } } }
+    });
+  }
+
+  makeBar('categoriesChart', categories, 'Обращения');
+  makeBar('districtsChart', districts, 'Обращения');
+  makeDoughnut('statusesChart', statuses);
+  makeDoughnut('slaChart', sla);
+  makeBar('avgPriorityChart', avgPriority, 'Avg priority');
+</script>
+{% endblock %}

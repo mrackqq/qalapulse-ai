@@ -1,0 +1,65 @@
+{% set current_user = current_user_from_request(request) %}
+{% set p = request.url.path %}
+{% set nav = [
+  ("/dashboard", "Dashboard", "dashboard"),
+  ("/submit", "Submit", "submit"),
+  ("/service", "Service", "service"),
+  ("/district", "District", "district"),
+  ("/performance", "Performance", "performance"),
+  ("/analytics", "Analytics", "analytics"),
+  ("/reports", "Reports", "reports"),
+  ("/demo", "Demo", "demo"),
+] %}
+{% macro nav_icon(name) %}
+{% if name == "dashboard" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+{% elif name == "submit" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"/></svg>
+{% elif name == "service" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.3 5.3L3 18v3h3l6.4-6.4a4 4 0 0 0 5.3-5.3l-2.6 2.6-2-2 2.6-2.6z"/></svg>
+{% elif name == "district" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
+{% elif name == "performance" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="7"/><rect x="12" y="7" width="3" height="11"/><rect x="17" y="13" width="3" height="5"/></svg>
+{% elif name == "analytics" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M12 3a9 9 0 0 1 9 9h-9z"/></svg>
+{% elif name == "reports" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+{% elif name == "demo" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 4.6L19 9l-4 3.3L16 18l-4-2.6L8 18l1-5.7L5 9l5.1-1.4z"/></svg>
+{% elif name == "api" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 6-6 6 6 6M16 6l6 6-6 6"/></svg>
+{% endif %}
+{% endmacro %}
+<div class="flex h-full flex-col gap-6 px-4 py-5">
+  <a href="/" class="flex items-center gap-3 px-1">
+    <span class="grid h-10 w-10 place-items-center rounded-2xl bg-brand-600 text-sm font-black text-white shadow-glow">QP</span>
+    <span class="leading-tight">
+      <span class="block font-display text-[15px] font-extrabold tracking-tight">QalaPulse AI</span>
+      <span class="block text-[11px] font-semibold text-muted">Astana City Ops</span>
+    </span>
+  </a>
+
+  <a href="/submit" class="btn-primary w-full">
+    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    Новое обращение
+  </a>
+
+  <nav class="flex flex-1 flex-col gap-1">
+    <p class="px-3 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Меню</p>
+    {% for href, label, icon in nav %}
+    <a href="{{ href }}" class="qp-nav-link {{ 'is-active' if p == href or (href != '/' and p.startswith(href)) else '' }}">
+      {{ nav_icon(icon) }}<span>{{ label }}</span>
+    </a>
+    {% endfor %}
+    <a href="/docs" class="qp-nav-link" target="_blank" rel="noopener">
+      {{ nav_icon("api") }}<span>API Docs</span>
+    </a>
+  </nav>
+
+  <div class="rounded-2xl border border-line bg-slate-50/80 p-3">
+    <div class="flex items-center gap-3">
+      <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-100 text-xs font-black text-brand-700">{{ (current_user.name or "G")[:1] | upper }}</span>
+      <div class="min-w-0 leading-tight">
+        <p class="truncate text-sm font-bold text-ink">{{ current_user.name or "Guest" }}</p>
+        <p class="truncate text-[11px] font-medium text-muted">{{ role_labels[current_user.role] }}</p>
+      </div>
+    </div>
+    {% if current_user.role == "guest" %}
+    <a href="/login" class="btn-secondary btn-sm mt-3 w-full">Войти в роль</a>
+    {% else %}
+    <a href="/logout" class="btn-ghost btn-sm mt-3 w-full">Выйти</a>
+    {% endif %}
+  </div>
+</div>

@@ -1,0 +1,54 @@
+{% extends "base_public.html" %}
+{% block content %}
+<section class="relative overflow-hidden">
+  <div class="pointer-events-none absolute inset-0 -z-10">
+    <div class="absolute -top-32 left-1/3 h-[420px] w-[620px] rounded-full bg-brand-100/50 blur-3xl"></div>
+  </div>
+  <div class="qp-container grid items-start gap-6 py-12 lg:grid-cols-[420px_minmax(0,1fr)] lg:py-16">
+    <form method="post" class="qp-card-pad">
+      <span class="eyebrow">Demo auth</span>
+      <h1 class="mt-2 font-display text-3xl font-extrabold tracking-tight">Войти в роль</h1>
+      <p class="mt-2 text-sm text-muted">Демо-доступ для жюри. Пароль у всех аккаунтов — <b class="text-ink">demo</b>.</p>
+      {% if request.query_params.get("error") %}
+      <p class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-700">Неверный логин или пароль.</p>
+      {% endif %}
+      <label class="mt-6 grid gap-2">
+        <span class="field-label">Username</span>
+        <input name="username" class="input" placeholder="admin" autocomplete="username">
+      </label>
+      <label class="mt-4 grid gap-2">
+        <span class="field-label">Password</span>
+        <input name="password" type="password" class="input" placeholder="demo" autocomplete="current-password">
+      </label>
+      <button class="btn-primary mt-6 w-full py-3">Войти</button>
+    </form>
+
+    <div class="qp-card-pad">
+      <h2 class="font-display text-lg font-extrabold">Demo-аккаунты</h2>
+      <p class="mt-1 text-sm text-muted">Нажмите карточку — логин и пароль подставятся автоматически.</p>
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        {% for username, account in users.items() %}
+        <button type="button" class="account qp-card-hover rounded-xl border border-line bg-slate-50/60 p-4 text-left" data-username="{{ username }}">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-ink">{{ username }}</span>
+            <span class="badge-brand">{{ role_labels[account.role] }}</span>
+          </div>
+          <span class="mt-1.5 block text-sm text-muted">{{ account.name }}</span>
+          {% if account.district %}<span class="mt-1 block text-xs text-muted">District: {{ account.district }}</span>{% endif %}
+          {% if account.service %}<span class="mt-1 block text-xs text-muted">Service: {{ account.service }}</span>{% endif %}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.account').forEach((b) => b.addEventListener('click', () => {
+    document.querySelector('input[name="username"]').value = b.dataset.username;
+    document.querySelector('input[name="password"]').value = 'demo';
+  }));
+</script>
+{% endblock %}

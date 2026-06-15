@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block topbar_title %}Обращение #{{ issue.id }}{% endblock %}
+{% block topbar_subtitle %}Case management · {{ category_labels[issue.category] }} · {{ district_labels[issue.district] }}{% endblock %}
+
+{% block content %}
+<div class="qp-container space-y-6 py-6 sm:py-8">
+
+  <!-- Header -->
+  <div class="qp-card-pad">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-display text-2xl font-extrabold tracking-tight">#{{ issue.id }}</span>
+          <span class="badge-status-{{ issue.status }}"><span class="dot"></span>{{ status_labels[issue.status] }}</span>
+          <span class="badge-risk-{{ issue.risk_level }}">Риск: {{ risk_labels[issue.risk_level] }}</span>
+          <span class="badge-sla-{{ issue.sla_status }}">SLA: {{ sla_labels[issue.sla_status] }}</span>
+        </div>
+        <p class="mt-3 max-w-3xl text-base leading-7 text-slate-700">{{ issue.summary }}</p>
+      </div>
+      <div class="flex shrink-0 flex-wrap gap-2">
+        <a href="/dashboard" class="btn-secondary">Dashboard</a>
+        <a href="/reports/print?district={{ issue.district }}" class="btn-secondary">Отчет района</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+    <!-- LEFT -->
+    <div class="grid gap-6">
+      <!-- Summary metrics -->
+      <article class="qp-card-pad">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <!-- Priority ring -->
+          <div class="flex items-center gap-4 rounded-xl border border-line bg-slate-50/60 p-4">
+            <div class="relative grid h-20 w-20 shrink-0 place-items-center">
+              <svg class="h-20 w-20 -rotate-90" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#E2E8F0" stroke-width="12"/>
+                <circle cx="60" cy="60" r="52" fill="none" stroke="{% if issue.priority_score >= 70 %}#E11D48{% elif issue.priority_score >= 40 %}#F59E0B{% else %}#10B981{% endif %}" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="{{ 326.7 - (326.7 * issue.priority_score / 100) }}"/>
+              </svg>
+              <span class="absolute font-display text-lg font-extrabold">{{ issue.priority_score }}</span>
+            </div>
+            <div><p class="stat-label">Priority score</p><p class="mt-1 text-sm font-bold">из 100</p></div>
+          </div>
+          <div class="rounded-xl border border-line bg-slate-50/60 p-4"><p class="stat-label">AI confidence</p><p class="mt-1 text-2xl font-extrabold">{{ issue.ai_confidence }}%</p><p class="text-xs text-muted">режим: {{ issue.ai_mode }}</p></div>
+          <div class="rounded-xl border border-line bg-slate-50/60 p-4"><p class="stat-label">Срок реакции</p><p class="mt-1 text-sm font-bold">{{ issue.sla_due_at.strftime("%d.%m.%Y %H:%M") if issue.sla_due_at else "Не задан" }}</p><p class="text-xs text-muted">{{ "Решено " ~ issue.resolved_at.strftime("%d.%m %H:%M") if issue.resolved_at else "Ещё не решено" }}</p></div>
+        </div>
+
+        <div class="mt-5 grid gap-4 md:grid-cols-2">
+          <div class="rounded-xl border border-line bg-white p-4">
+            <p class="stat-label">Ответственная служба</p>
+            <p class="mt-1.5 font-bold text-ink">{{ issue.responsible_service }}</p>
+          </div>
+          <div class="rounded-xl border border-line bg-white p-4">
+            <p class="stat-label">Исполнитель</p>
+            <p class="mt-1.5 font-bold text-ink">{{ issue.assigned_to or issue.responsible_service }}</p>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <h3 class="font-display text-lg font-extrabold">Текст обращения</h3>
+          <p class="mt-2 whitespace-pre-line text-sm leading-7 text-slate-700">{{ issue.text }}</p>
+        </div>
+
+        {% if issue.tags %}
+        <div class="mt-5 flex flex-wrap gap-1.5">
+          {% for tag in issue.tags %}<span class="badge-soft">{{ tag }}</span>{% endfor %}
+        </div>
+        {% endif %}
+      </article>
+
+      <!-- AI analysis -->
+      <article class="qp-card-pad border-brand-100 bg-gradient-to-br from-brand-50/40 to-white">
+        <span class="eyebrow">AI analysis</span>
+        <p class="mt-3 text-sm leading-7 text-slate-700">{{ issue.ai_explanation }}</p>
+      </article>
+
+      <!-- Photos -->
+      <article class="qp-card-pad">
+        <h3 class="font-display text-lg font-extrabold">Фото «до / после»</h3>
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <p class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">До</p>
+            {% if issue.photo_path %}
+            <img src="{{ issue.photo_path }}" alt="Фото до" class="max-h-[320px] w-full rounded-xl border border-line object-cover">
+            {% else %}
+            <div class="empty grid h-40 place-items-center text-sm text-muted">Фото не приложено</div>
+            {% endif %}
+          </div>
+          <div>
+            <p class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">После</p>
+            {% if issue.resolution_photo_path %}
+            <img src="{{ issue.resolution_photo_path }}" alt="Фото после" class="max-h-[320px] w-full rounded-xl border border-line object-cover">
+            {% else %}
+            <div class="empty grid h-40 place-items-center text-sm text-muted">Служба ещё не загрузила результат</div>
+            {% endif %}
+          </div>
+        </div>
+        {% if issue.resolution_comment %}
+        <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Комментарий решения</p>
+          <p class="mt-1.5 text-sm text-emerald-900">{{ issue.resolution_comment }}</p>
+        </div>
+        {% endif %}
+      </article>
+
+      <!-- Map -->
+      <article class="qp-card p-4">
+        <div class="mb-3 flex items-center justify-between px-1">
+          <h3 class="font-display text-lg font-extrabold">Локация</h3>
+          <p class="text-xs text-muted">{{ issue.address_text or "Адрес не указан" }}</p>
+        </div>
+        <div id="detailMap" class="map-shell small-map"></div>
+      </article>
+
+      <!-- Duplicates -->
+      <article class="qp-card-pad">
+        <div class="flex items-center justify-between">
+          <h3 class="font-display text-lg font-extrabold">Похожие обращения</h3>
+          {% if duplicates %}<span class="badge-brand">{{ duplicates|length }}</span>{% endif %}
+        </div>
+        {% if duplicates %}
+        <div class="mt-4 grid gap-3">
+          {% for row in duplicates %}
+          <a href="/issues/{{ row.issue.id }}" class="qp-card-hover rounded-xl border border-line p-4">
+            <p class="text-sm font-bold text-ink">#{{ row.issue.id }} · {{ row.issue.summary }}</p>
+            <p class="mt-1.5 flex flex-wrap gap-1.5 text-xs">
+              <span class="badge-brand">{{ row.similarity_score }}% similarity</span>
+              <span class="badge-soft">{{ row.distance_meters }} м</span>
+              <span class="badge-sla-{{ row.issue.sla_status }}">{{ sla_labels[row.issue.sla_status] }}</span>
+            </p>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty mt-4"><p class="text-sm text-muted">Похожих обращений рядом пока нет.</p></div>
+        {% endif %}
+      </article>
+    </div>
+
+    <!-- RIGHT: actions + timeline -->
+    <aside class="grid content-start gap-6">
+      <div class="qp-card-pad">
+        <h3 class="font-display text-lg font-extrabold">Действия</h3>
+        <form class="mt-4 grid gap-3" action="/issues/{{ issue.id }}/status" method="post">
+          <textarea name="comment" rows="2" class="textarea" placeholder="Комментарий (необязательно)"></textarea>
+          <button name="status" value="in_progress" class="btn-accent w-full">Взять в работу</button>
+          <button name="status" value="resolved" class="btn-primary w-full">Отметить решённым</button>
+          <button name="status" value="rejected" class="btn-secondary w-full">Отклонить</button>
+        </form>
+      </div>
+
+      <div class="qp-card-pad">
+        <h3 class="font-display text-lg font-extrabold">Загрузить результат</h3>
+        <form class="mt-4 grid gap-3" action="/issues/{{ issue.id }}/resolution" method="post" enctype="multipart/form-data">
+          <input name="resolution_photo" type="file" accept="image/*" class="input file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-brand-700">
+          <textarea name="resolution_comment" rows="2" class="textarea" placeholder="Что сделано?"></textarea>
+          <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <input type="checkbox" name="mark_resolved" value="1" class="h-4 w-4 rounded border-line text-brand-600 focus:ring-brand-300">
+            Сразу отметить как решено
+          </label>
+          <button class="btn-dark w-full">Сохранить фото «после»</button>
+        </form>
+      </div>
+
+      <div class="qp-card-pad">
+        <h3 class="font-display text-lg font-extrabold">История статуса</h3>
+        {% if status_history %}
+        <div class="timeline mt-5">
+          {% for item in status_history %}
+          <div class="timeline-item">
+            <span class="timeline-dot {% if item.new_status == 'resolved' %}!bg-emerald-500{% elif item.new_status == 'rejected' %}!bg-slate-400{% endif %}"></span>
+            <p class="text-sm font-bold text-ink">{{ status_labels[item.old_status] if item.old_status else "Создано" }} → {{ status_labels[item.new_status] }}</p>
+            <p class="mt-0.5 text-xs text-muted">{{ item.created_at.strftime("%d.%m.%Y %H:%M") }}</p>
+            {% if item.comment %}<p class="mt-1.5 text-sm text-slate-600">{{ item.comment }}</p>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty mt-4"><p class="text-sm text-muted">Статус ещё не менялся.</p></div>
+        {% endif %}
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const points = {{ map_points_json | safe }};
+  const map = L.map('detailMap').setView([51.128, 71.43], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
+  if (points.length) {
+    const p = points[0];
+    L.marker([p.latitude, p.longitude]).addTo(map).bindPopup(`<div class="qp-popup"><h4>#${p.id}</h4><p>${p.summary}</p></div>`).openPopup();
+    map.setView([p.latitude, p.longitude], 15);
+  }
+</script>
+{% endblock %}

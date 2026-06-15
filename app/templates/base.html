@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    {% include "_head.html" %}
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="qp-shell">
+    {% set current_user = current_user_from_request(request) %}
+
+    <!-- Mobile drawer -->
+    <div id="qpDrawer" class="fixed inset-0 z-50 hidden lg:hidden">
+      <div id="qpOverlay" class="absolute inset-0 bg-ink/40 backdrop-blur-sm"></div>
+      <aside class="absolute inset-y-0 left-0 w-[280px] bg-white shadow-2xl">{% include "_sidebar.html" %}</aside>
+    </div>
+
+    <!-- Desktop sidebar -->
+    <aside class="fixed inset-y-0 left-0 z-30 hidden w-[268px] border-r border-line bg-white lg:block">{% include "_sidebar.html" %}</aside>
+
+    <div class="lg:pl-[268px]">
+      <!-- Topbar -->
+      <header class="sticky top-0 z-20 border-b border-line bg-white/85 backdrop-blur-xl">
+        <div class="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+          <button id="qpMenuBtn" class="btn-ghost btn-sm -ml-2 lg:hidden" aria-label="Меню">
+            <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="min-w-0 flex-1">
+            <h1 class="truncate font-display text-base font-extrabold tracking-tight text-ink sm:text-lg">{% block topbar_title %}{{ page_title }}{% endblock %}</h1>
+            <p class="hidden truncate text-xs text-muted sm:block">{% block topbar_subtitle %}Smart city command center для Астаны{% endblock %}</p>
+          </div>
+          <span class="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 sm:inline-flex">
+            <span class="relative flex h-2 w-2"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span></span>
+            MVP / Demo mode
+          </span>
+          <a href="/docs" target="_blank" rel="noopener" class="btn-secondary btn-sm hidden md:inline-flex">API</a>
+        </div>
+      </header>
+
+      <main class="qp-fade">
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="border-t border-line bg-white">
+        <div class="flex flex-col gap-1 px-4 py-6 text-xs text-muted sm:px-6 lg:px-8">
+          <p class="font-semibold text-slate-500">QalaPulse AI · MVP для Astana Innovations Accelerator 2026.</p>
+          <p>Rule-based AI работает локально. Optional LLM включается через <code class="rounded bg-slate-100 px-1 py-0.5 text-[11px]">ENABLE_LLM=true</code> и API-ключ.</p>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        const btn = document.getElementById('qpMenuBtn');
+        const drawer = document.getElementById('qpDrawer');
+        const overlay = document.getElementById('qpOverlay');
+        if (!btn || !drawer) return;
+        btn.addEventListener('click', () => drawer.classList.remove('hidden'));
+        overlay.addEventListener('click', () => drawer.classList.add('hidden'));
+        drawer.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => drawer.classList.add('hidden')));
+      })();
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

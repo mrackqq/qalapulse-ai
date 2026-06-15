@@ -1,0 +1,5 @@
+# Optional tooling — not required to run the app.
+-r requirements.txt
+
+# Pitch deck generator (python build_deck.py)
+python-pptx==1.0.2

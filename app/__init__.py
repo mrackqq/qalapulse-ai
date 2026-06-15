@@ -1,0 +1,1 @@
+"""QalaPulse AI application package."""

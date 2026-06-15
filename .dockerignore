@@ -1,0 +1,27 @@
+.git
+.gitignore
+.github
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# local data & artifacts not needed in the image
+qalapulse.db
+*.sqlite3
+*.pptx
+*.pdf
+build_deck.py
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+
+.env
+.env.local
+.idea
+.vscode
+.DS_Store
+README.md

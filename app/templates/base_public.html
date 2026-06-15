@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    {% include "_head.html" %}
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="qp-shell bg-white">
+    {% set current_user = current_user_from_request(request) %}
+    <header class="sticky top-0 z-40 border-b border-line bg-white/85 backdrop-blur-xl">
+      <div class="qp-container flex h-16 items-center justify-between gap-4">
+        <a href="/" class="flex items-center gap-3">
+          <span class="grid h-9 w-9 place-items-center rounded-2xl bg-brand-600 text-sm font-black text-white shadow-glow">QP</span>
+          <span class="leading-tight">
+            <span class="block font-display text-[15px] font-extrabold tracking-tight">QalaPulse AI</span>
+            <span class="block text-[11px] font-semibold text-muted">Astana City Ops</span>
+          </span>
+        </a>
+        <nav class="hidden items-center gap-1 text-sm font-semibold text-slate-600 md:flex">
+          <a class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-100 hover:text-ink" href="/dashboard">Dashboard</a>
+          <a class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-100 hover:text-ink" href="/performance">Performance</a>
+          <a class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-100 hover:text-ink" href="/reports">Reports</a>
+          <a class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-100 hover:text-ink" href="/demo">Demo</a>
+          <a class="rounded-xl px-3 py-2 transition-colors hover:bg-slate-100 hover:text-ink" href="/docs" target="_blank" rel="noopener">API</a>
+        </nav>
+        <div class="flex items-center gap-2">
+          {% if current_user.role == "guest" %}
+          <a href="/login" class="btn-ghost btn-sm hidden sm:inline-flex">Войти</a>
+          {% else %}
+          <a href="/logout" class="btn-ghost btn-sm hidden sm:inline-flex">{{ role_labels[current_user.role] }}</a>
+          {% endif %}
+          <a href="/submit" class="btn-primary btn-sm">Сообщить о проблеме</a>
+        </div>
+      </div>
+    </header>
+
+    <main>{% block content %}{% endblock %}</main>
+
+    <footer class="border-t border-line bg-slate-50">
+      <div class="qp-container grid gap-8 py-12 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div>
+          <div class="flex items-center gap-3">
+            <span class="grid h-9 w-9 place-items-center rounded-2xl bg-brand-600 text-sm font-black text-white">QP</span>
+            <span class="font-display text-[15px] font-extrabold tracking-tight">QalaPulse AI</span>
+          </div>
+          <p class="mt-4 max-w-sm text-sm leading-6 text-muted">AI-радар городских проблем Астаны: от обращения жителя до назначения службы, SLA и отчета для акимата.</p>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Продукт</p>
+          <div class="mt-4 grid gap-2 text-sm font-medium text-slate-600">
+            <a href="/dashboard" class="hover:text-ink">Dashboard</a>
+            <a href="/submit" class="hover:text-ink">Подать обращение</a>
+            <a href="/performance" class="hover:text-ink">SLA Performance</a>
+            <a href="/reports" class="hover:text-ink">Reports</a>
+          </div>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Платформа</p>
+          <div class="mt-4 grid gap-2 text-sm font-medium text-slate-600">
+            <a href="/demo" class="hover:text-ink">Pitch Demo</a>
+            <a href="/docs" target="_blank" rel="noopener" class="hover:text-ink">API Docs</a>
+            <a href="/login" class="hover:text-ink">Demo роли</a>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-line">
+        <div class="qp-container flex flex-col gap-1 py-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>© 2026 QalaPulse AI · MVP для Astana Innovations Accelerator.</p>
+          <p>Rule-based AI локально · Optional LLM по ключу.</p>
+        </div>
+      </div>
+    </footer>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block topbar_title %}SLA Performance{% endblock %}
+{% block topbar_subtitle %}Executive view · рейтинг служб и районов{% endblock %}
+
+{% block content %}
+<div class="qp-container space-y-6 py-6 sm:py-8">
+  <div>
+    <span class="eyebrow">SLA performance</span>
+    <h2 class="section-title mt-2">Рейтинг служб и районов</h2>
+    <p class="section-sub">Просрочки, доля закрытия в срок и среднее время решения.</p>
+  </div>
+
+  <!-- Aggregate KPIs -->
+  {% set total_all = services | sum(attribute='total') %}
+  {% set overdue_all = services | sum(attribute='overdue') %}
+  {% set resolved_all = services | sum(attribute='resolved') %}
+  <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div class="stat-card"><p class="stat-label">Заявок всего</p><p class="stat-value">{{ total_all }}</p></div>
+    <div class="stat-card"><p class="stat-label">Решено</p><p class="stat-value text-emerald-600">{{ resolved_all }}</p></div>
+    <div class="stat-card border-rose-100 bg-rose-50/40"><p class="stat-label text-rose-600">Overdue (open)</p><p class="stat-value text-rose-700">{{ overdue_all }}</p></div>
+    <div class="stat-card"><p class="stat-label">Служб в работе</p><p class="stat-value">{{ services|length }}</p></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid gap-6 lg:grid-cols-2">
+    <article class="qp-card-pad">
+      <h3 class="font-display text-lg font-extrabold">On-time rate по службам</h3>
+      <p class="section-sub">Доля заявок, закрытых в срок, %</p>
+      <div class="mt-4 h-72"><canvas id="ontimeChart"></canvas></div>
+    </article>
+    <article class="qp-card-pad">
+      <h3 class="font-display text-lg font-extrabold">Просрочки по районам</h3>
+      <p class="section-sub">Открытые overdue-заявки</p>
+      <div class="mt-4 h-72"><canvas id="overdueChart"></canvas></div>
+    </article>
+  </div>
+
+  <!-- Services ranking -->
+  <div class="qp-card overflow-hidden">
+    <div class="border-b border-line p-4 sm:p-5"><h3 class="font-display text-lg font-extrabold">Службы</h3></div>
+    <div class="qp-scroll overflow-x-auto">
+      <table class="qp-table min-w-[760px]">
+        <thead><tr><th>Служба</th><th>Всего</th><th>Open</th><th>Overdue</th><th>On-time</th><th>Avg h</th></tr></thead>
+        <tbody>
+          {% for row in services %}
+          <tr>
+            <td class="font-semibold">{{ row.label }}</td>
+            <td>{{ row.total }}</td>
+            <td>{{ row.open }}</td>
+            <td>{% if row.overdue %}<span class="badge-sla-overdue">{{ row.overdue }}</span>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="track w-20"><span class="{% if row.on_time_rate >= 80 %}bg-emerald-500{% elif row.on_time_rate >= 50 %}bg-amber-500{% else %}bg-rose-500{% endif %}" style="width: {{ row.on_time_rate }}%"></span></div>
+                <span class="text-xs font-bold text-muted">{{ row.on_time_rate }}%</span>
+              </div>
+            </td>
+            <td>{{ row.avg_resolution_hours }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6"><div class="empty my-2"><p class="text-sm text-muted">Нет данных.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Districts ranking -->
+  <div class="qp-card overflow-hidden">
+    <div class="border-b border-line p-4 sm:p-5"><h3 class="font-display text-lg font-extrabold">Районы</h3></div>
+    <div class="qp-scroll overflow-x-auto">
+      <table class="qp-table min-w-[760px]">
+        <thead><tr><th>Район</th><th>Всего</th><th>Open</th><th>Overdue</th><th>On-time</th><th>Avg priority</th></tr></thead>
+        <tbody>
+          {% for row in districts %}
+          <tr>
+            <td class="font-semibold">{{ row.label }}</td>
+            <td>{{ row.total }}</td>
+            <td>{{ row.open }}</td>
+            <td>{% if row.overdue %}<span class="badge-sla-overdue">{{ row.overdue }}</span>{% else %}<span class="text-muted">0</span>{% endif %}</td>
+            <td>
+              <div class="flex items-center gap-2">
+                <div class="track w-20"><span class="{% if row.on_time_rate >= 80 %}bg-emerald-500{% elif row.on_time_rate >= 50 %}bg-amber-500{% else %}bg-rose-500{% endif %}" style="width: {{ row.on_time_rate }}%"></span></div>
+                <span class="text-xs font-bold text-muted">{{ row.on_time_rate }}%</span>
+              </div>
+            </td>
+            <td>{{ row.avg_priority }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6"><div class="empty my-2"><p class="text-sm text-muted">Нет данных.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const services = {{ services | tojson }};
+  const districts = {{ districts | tojson }};
+  Chart.defaults.font.family = "Inter, sans-serif";
+  Chart.defaults.color = "#64748B";
+
+  function emptyOr(canvasId, hasData) {
+    if (hasData) return true;
+    const c = document.getElementById(canvasId);
+    const p = document.createElement('div');
+    p.className = 'empty grid h-full place-items-center text-sm text-muted';
+    p.textContent = 'Нет данных для графика';
+    c.replaceWith(p);
+    return false;
+  }
+
+  if (emptyOr('ontimeChart', services.length)) {
+    new Chart(document.getElementById('ontimeChart'), {
+      type: 'bar',
+      data: { labels: services.map(s => s.label), datasets: [{ label: 'On-time %', data: services.map(s => s.on_time_rate), backgroundColor: '#4F46E5', borderRadius: 8, maxBarThickness: 34 }] },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, max: 100, grid: { color: '#EEF2F7' } }, y: { grid: { display: false } } } }
+    });
+  }
+  if (emptyOr('overdueChart', districts.length)) {
+    new Chart(document.getElementById('overdueChart'), {
+      type: 'bar',
+      data: { labels: districts.map(d => d.label), datasets: [{ label: 'Overdue', data: districts.map(d => d.overdue), backgroundColor: '#F43F5E', borderRadius: 8, maxBarThickness: 40 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#EEF2F7' } }, x: { grid: { display: false } } } }
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block topbar_title %}Кабинет службы{% endblock %}
+{% block topbar_subtitle %}Очередь задач, SLA и закрытие с фото «после»{% endblock %}
+
+{% block content %}
+<div class="qp-container space-y-6 py-6 sm:py-8">
+  <div>
+    <span class="eyebrow">Service cabinet</span>
+    <h2 class="section-title mt-2">Что нужно сделать первым</h2>
+    <p class="section-sub">Заявки отсортированы по priority. Сначала — high-risk и просроченные.</p>
+  </div>
+
+  <!-- KPI -->
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <div class="stat-card"><p class="stat-label">Всего</p><p class="stat-value">{{ summary.total }}</p></div>
+    <div class="stat-card border-rose-100 bg-rose-50/40"><p class="stat-label text-rose-600">High-risk</p><p class="stat-value text-rose-700">{{ summary.high_risk }}</p></div>
+    <div class="stat-card border-rose-100 bg-rose-50/40"><p class="stat-label text-rose-600">Просрочено</p><p class="stat-value text-rose-700">{{ summary.overdue }}</p></div>
+    <div class="stat-card"><p class="stat-label">Avg priority</p><p class="stat-value">{{ summary.avg_priority }}</p></div>
+    <div class="stat-card"><p class="stat-label">AI confidence</p><p class="stat-value">{{ summary.avg_confidence }}%</p></div>
+  </div>
+
+  <!-- Filters -->
+  <form class="qp-card flex flex-col gap-3 p-4 md:flex-row md:items-center" method="get">
+    <div class="grid flex-1 gap-3 sm:grid-cols-3">
+      <select name="service" class="select">
+        <option value="">Все службы</option>
+        {% for service in services %}<option value="{{ service }}" {% if selected_service == service %}selected{% endif %}>{{ service }}</option>{% endfor %}
+      </select>
+      <select name="status" class="select">
+        <option value="">Все статусы</option>
+        {% for item in statuses %}<option value="{{ item }}" {% if selected_status == item %}selected{% endif %}>{{ status_labels[item] }}</option>{% endfor %}
+      </select>
+      <select name="sla" class="select">
+        <option value="">Все SLA</option>
+        {% for item in sla_statuses %}<option value="{{ item }}" {% if selected_sla == item %}selected{% endif %}>{{ sla_labels[item] }}</option>{% endfor %}
+      </select>
+    </div>
+    <button class="btn-dark">Фильтр</button>
+  </form>
+
+  <!-- Issue list -->
+  <div class="grid gap-3">
+    {% for issue in issues %}
+    <a href="/issues/{{ issue.id }}" class="qp-card qp-card-hover flex items-center gap-4 p-4">
+      <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl font-display text-base font-extrabold {% if issue.priority_score >= 70 %}bg-rose-50 text-rose-700{% elif issue.priority_score >= 40 %}bg-amber-50 text-amber-700{% else %}bg-emerald-50 text-emerald-700{% endif %}">{{ issue.priority_score }}</span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-sm font-bold text-ink">#{{ issue.id }} · {{ issue.summary }}</p>
+        <p class="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="badge-neutral">{{ category_labels[issue.category] }}</span>
+          <span class="badge-soft">{{ district_labels[issue.district] }}</span>
+          <span class="badge-status-{{ issue.status }}"><span class="dot"></span>{{ status_labels[issue.status] }}</span>
+          <span class="badge-sla-{{ issue.sla_status }}">{{ sla_labels[issue.sla_status] }}</span>
+        </p>
+      </div>
+      <svg viewBox="0 0 24 24" class="hidden h-5 w-5 shrink-0 text-slate-300 sm:block" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    {% else %}
+    <div class="empty"><p class="text-sm font-semibold text-slate-500">Нет задач по выбранному фильтру</p></div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Environments
+.venv/
+venv/
+env/
+.env
+.env.local
+
+# Secrets / keys
+*.pem
+*.key
+
+# Database (local SQLite)
+qalapulse.db
+*.sqlite3
+
+# Uploaded media (keep folder, ignore contents)
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+
+# Generated artifacts (pitch deck is built via build_deck.py)
+QalaPulse_AI_Pitch.pptx
+*.pptx
+*.pdf
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

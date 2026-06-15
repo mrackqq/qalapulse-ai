@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block topbar_subtitle %}Обращение принято и проанализировано{% endblock %}
+
+{% block content %}
+<div class="qp-container py-6 sm:py-8">
+  <div class="mx-auto max-w-5xl space-y-6">
+
+    <!-- Hero result -->
+    <div class="qp-card overflow-hidden">
+      <div class="flex flex-col gap-5 border-b border-line bg-gradient-to-br from-brand-50 to-white p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <div>
+          <span class="badge-risk-low"><svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg> Обращение принято</span>
+          <h2 class="section-title mt-3">Заявка #{{ issue.id }}</h2>
+          <p class="mt-2 max-w-xl text-sm leading-6 text-muted">{{ issue.summary }}</p>
+          <div class="mt-4 flex flex-wrap gap-1.5">
+            <span class="badge-status-{{ issue.status }}"><span class="dot"></span>{{ status_labels[issue.status] if status_labels is defined else issue.status }}</span>
+            <span class="badge-risk-{{ issue.risk_level }}">Риск: {{ risk_labels[issue.risk_level] }}</span>
+            <span class="badge-sla-{{ issue.sla_status }}">SLA: {{ sla_labels[issue.sla_status] }}</span>
+          </div>
+        </div>
+        <!-- Priority ring -->
+        <div class="flex shrink-0 flex-col items-center">
+          <div class="relative grid h-32 w-32 place-items-center">
+            <svg class="h-32 w-32 -rotate-90" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#E2E8F0" stroke-width="12"/>
+              <circle cx="60" cy="60" r="52" fill="none" stroke="{% if issue.priority_score >= 70 %}#E11D48{% elif issue.priority_score >= 40 %}#F59E0B{% else %}#10B981{% endif %}" stroke-width="12" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="{{ 326.7 - (326.7 * issue.priority_score / 100) }}"/>
+            </svg>
+            <div class="absolute text-center">
+              <p class="font-display text-3xl font-extrabold leading-none">{{ issue.priority_score }}</p>
+              <p class="text-[10px] font-bold uppercase tracking-wide text-muted">из 100</p>
+            </div>
+          </div>
+          <p class="mt-2 text-xs font-bold uppercase tracking-wide text-muted">Priority score</p>
+        </div>
+      </div>
+
+      <!-- Quick facts -->
+      <div class="grid gap-3 p-6 sm:grid-cols-2 lg:grid-cols-4">
+        {% set facts = [
+          ("Категория", category_labels[issue.category]),
+          ("Район", district_labels[issue.district]),
+          ("AI confidence", issue.ai_confidence ~ "%"),
+          ("Срок реакции", (issue.sla_due_at.strftime("%d.%m %H:%M") if issue.sla_due_at else "Не задан")),
+        ] %}
+        {% for f in facts %}
+        <div class="rounded-xl border border-line bg-slate-50/60 p-4">
+          <p class="stat-label">{{ f[0] }}</p>
+          <p class="mt-1 font-bold text-ink">{{ f[1] }}</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="flex flex-wrap gap-2 px-6 pb-6">
+        <a href="/issues/{{ issue.id }}" class="btn-primary">Открыть заявку</a>
+        <a href="/submit" class="btn-secondary">Подать ещё одно</a>
+        <a href="/dashboard" class="btn-secondary">В dashboard</a>
+      </div>
+    </div>
+
+    <!-- Service + AI -->
+    <div class="grid gap-6 lg:grid-cols-2">
+      <div class="qp-card-pad">
+        <span class="eyebrow">Ответственная служба</span>
+        <p class="mt-3 text-lg font-bold text-ink">{{ issue.responsible_service }}</p>
+        <p class="mt-2 text-sm text-muted">SLA-срок: {{ issue.sla_due_at.strftime("%d.%m.%Y %H:%M") if issue.sla_due_at else "не задан" }} · статус {{ sla_labels[issue.sla_status] }}.</p>
+      </div>
+      <div class="qp-card-pad">
+        <span class="eyebrow">AI explanation</span>
+        <p class="mt-3 text-sm leading-7 text-slate-700">{{ issue.ai_explanation }}</p>
+      </div>
+    </div>
+
+    <!-- Duplicates -->
+    <div class="qp-card-pad">
+      <div class="flex items-center justify-between">
+        <h3 class="font-display text-lg font-extrabold">Похожие обращения рядом</h3>
+        {% if duplicates %}<span class="badge-brand">{{ duplicates|length }}</span>{% endif %}
+      </div>
+      {% if duplicates %}
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        {% for row in duplicates %}
+        <a href="/issues/{{ row.issue.id }}" class="qp-card-hover rounded-xl border border-line p-4">
+          <p class="text-sm font-bold text-ink">#{{ row.issue.id }} · {{ row.issue.summary }}</p>
+          <p class="mt-1.5 flex flex-wrap gap-1.5 text-xs">
+            <span class="badge-brand">{{ row.similarity_score }}% совпадение</span>
+            <span class="badge-soft">{{ row.distance_meters }} м</span>
+          </p>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty mt-4"><p class="text-sm text-muted">Похожих обращений рядом пока нет.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

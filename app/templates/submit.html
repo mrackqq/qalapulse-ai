@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block topbar_subtitle %}Обращение жителя → AI-анализ за секунды{% endblock %}
+
+{% block content %}
+<div class="qp-container space-y-6 py-6 sm:py-8">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <span class="eyebrow">Citizen intake</span>
+      <h2 class="section-title mt-2">Сообщить о городской проблеме</h2>
+      <p class="section-sub max-w-2xl">Опишите ситуацию и выберите точку на карте. Координаты можно найти по ориентиру из локального справочника Астаны.</p>
+    </div>
+    <a href="/dashboard" class="btn-secondary">Открыть dashboard</a>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
+    <!-- FORM -->
+    <form class="qp-card p-5 sm:p-6" method="post" enctype="multipart/form-data">
+      <div class="grid gap-6">
+        <label class="grid gap-2">
+          <span class="field-label">Имя <span class="font-normal text-muted">(необязательно)</span></span>
+          <input name="user_name" class="input" placeholder="Можно оставить пустым">
+        </label>
+
+        <div class="grid gap-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="field-label">Описание проблемы *</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" class="sample btn-secondary btn-sm" data-text="На пешеходном маршруте у остановки не работает освещение, вечером жителям района небезопасно проходить участок">Тёмный участок</button>
+              <button type="button" class="sample btn-secondary btn-sm" data-text="После дождя улицу затопило, машины не могут проехать">Подтопление</button>
+              <button type="button" class="sample btn-secondary btn-sm" data-text="Во дворе сильный гололёд, люди скользят и падают у подъезда">Гололёд</button>
+            </div>
+          </div>
+          <textarea id="text" name="text" required rows="6" class="textarea" placeholder="Например: на пешеходном маршруте не работает освещение, вечером жителям района небезопасно проходить участок"></textarea>
+        </div>
+
+        <div class="grid gap-6 sm:grid-cols-2">
+          <div class="grid gap-2">
+            <span class="field-label">Адрес или ориентир</span>
+            <div class="flex gap-2">
+              <input id="addressText" name="address_text" class="input min-w-0 flex-1" placeholder="Mega Silk Way, EXPO, Туран">
+              <button type="button" id="geocodeButton" class="btn-dark shrink-0">Найти</button>
+            </div>
+            <div id="geocodeResults" class="grid gap-2 text-xs"></div>
+          </div>
+          <label class="grid gap-2">
+            <span class="field-label">Категория</span>
+            <select name="category_hint" class="select">
+              <option value="">AI определит сам</option>
+              {% for category in categories %}<option value="{{ category }}">{{ category_labels[category] }}</option>{% endfor %}
+            </select>
+          </label>
+        </div>
+
+        <div class="grid gap-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="field-label">Точка на карте</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" class="landmark btn-secondary btn-sm" data-lat="51.0908" data-lon="71.4184">EXPO</button>
+              <button type="button" class="landmark btn-secondary btn-sm" data-lat="51.1286" data-lon="71.3675">Туран</button>
+              <button type="button" id="clearPoint" class="btn-ghost btn-sm">Очистить</button>
+            </div>
+          </div>
+          <div id="submitMap" class="map-shell small-map"></div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <input id="latitude" name="latitude" readonly class="input bg-slate-50" placeholder="latitude">
+            <input id="longitude" name="longitude" readonly class="input bg-slate-50" placeholder="longitude">
+          </div>
+        </div>
+
+        <label class="grid gap-2">
+          <span class="field-label">Фото «до»</span>
+          <input name="photo" type="file" accept="image/*" class="input file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-brand-700">
+          <span class="field-hint">Если фото добавлено, AI пометит обращение как photo evidence и повысит доверие к заявке.</span>
+        </label>
+
+        <button class="btn-primary w-full py-3.5 text-base">Отправить обращение</button>
+      </div>
+    </form>
+
+    <!-- ASIDE -->
+    <aside class="qp-card-pad lg:sticky lg:top-24 lg:self-start">
+      <h3 class="font-display text-lg font-extrabold">Что рассчитает AI</h3>
+      <div class="mt-5 grid gap-3">
+        {% for t in [
+          ("Категория и район", "Определит тему обращения и район Астаны по координатам или ориентирам."),
+          ("Priority + confidence", "Соберет балл 0–100 и уверенность анализа по тексту, гео и фото."),
+          ("Служба и SLA", "Назначит ответственную службу и срок реакции автоматически."),
+          ("Дубли рядом", "Найдет похожие обращения в радиусе до 500 метров."),
+        ] %}
+        <div class="rounded-xl border border-line bg-slate-50/60 p-4">
+          <p class="text-sm font-bold text-ink">{{ t[0] }}</p>
+          <p class="mt-1 text-sm leading-6 text-muted">{{ t[1] }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const map = L.map('submitMap').setView([51.128, 71.43], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
+
+  let marker = null;
+  const latInput = document.getElementById('latitude');
+  const lonInput = document.getElementById('longitude');
+  const addressInput = document.getElementById('addressText');
+  const results = document.getElementById('geocodeResults');
+
+  function setPoint(latlng) {
+    latInput.value = latlng.lat.toFixed(6);
+    lonInput.value = latlng.lng.toFixed(6);
+    if (marker) marker.setLatLng(latlng); else marker = L.marker(latlng).addTo(map);
+    map.setView(latlng, Math.max(map.getZoom(), 14));
+  }
+
+  map.on('click', (e) => setPoint(e.latlng));
+  document.getElementById('clearPoint').addEventListener('click', () => {
+    latInput.value = ''; lonInput.value = '';
+    if (marker) { map.removeLayer(marker); marker = null; }
+  });
+  document.querySelectorAll('.landmark').forEach((b) => b.addEventListener('click', () => setPoint({ lat: Number(b.dataset.lat), lng: Number(b.dataset.lon) })));
+  document.querySelectorAll('.sample').forEach((b) => b.addEventListener('click', () => {
+    const el = document.getElementById('text'); el.value = b.dataset.text; el.focus();
+  }));
+
+  document.getElementById('geocodeButton').addEventListener('click', async () => {
+    const query = addressInput.value.trim();
+    results.innerHTML = '';
+    if (query.length < 2) return;
+    const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+    const items = await response.json();
+    if (!items.length) { results.innerHTML = '<span class="text-muted">Не найдено в локальном справочнике.</span>'; return; }
+    items.forEach((item) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rounded-xl border border-line bg-slate-50 px-3 py-2 text-left font-semibold text-slate-700 hover:bg-slate-100';
+      b.textContent = `${item.name} · ${item.district}`;
+      b.addEventListener('click', () => { addressInput.value = item.name; setPoint({ lat: item.lat, lng: item.lon }); results.innerHTML = ''; });
+      results.appendChild(b);
+    });
+  });
+</script>
+{% endblock %}
